@@ -103,10 +103,13 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if (args.len != 2) {
-        std.debug.print("Usage: {s} <image_file>\n", .{args[0]});
+    if (args.len != 3) {
+        print("Usage: {s} <image_file> <print_mode>\n", .{args[0]});
+        print("print mode: 0 - pretty, 1 - verbose, 2 - boolean\n", .{});
         return error.InvalidArgCount;
     }
+
+    const printmode: u8 = try std.fmt.parseInt(u8, args[2], 10);
 
     var width: c_int = undefined;
     var height: c_int = undefined;
@@ -130,29 +133,77 @@ pub fn main() !void {
     // Initialize picture object
     var image = Picture.pictureInit(img, @intCast(width), @intCast(height), @intCast(channels));
 
-    // Calculate entropy & count unique colors
-    const entropy = image.calculateEntropy();
-    // const unique_colors = try image.countUniqueColors();
+    switch (printmode) {
+        1 => {
+            // Calculate entropy & count unique colors
+            const entropy = image.calculateEntropy();
+            const unique_colors = try image.countUniqueColors();
 
-    // Palletize the picture object currently in use
-    image.palletizeImage(color_depth);
+            // Palletize the picture object currently in use
+            image.palletizeImage(color_depth);
 
-    // Count unique colors in the picture object after palletization
-    const unique_colors_palette = try image.countUniqueColors();
+            // Count unique colors in the picture object after palletization
+            const unique_colors_palette = try image.countUniqueColors();
 
-    // print("Image entropy: {d:.6}\n", .{entropy});
-    // print("Unique colors: {d}\n", .{unique_colors});
-    // print("Unique colors after palletization (depth {d}): {d}\n", .{ color_depth, unique_colors_palette });
+            print("Input image:\t{s}\n", .{args[1]});
+            print("Image entropy:\t{d:.6}\n", .{entropy});
+            print("Unique colors:\t{d}\n", .{unique_colors});
+            print("Pallete colors:\t{d}\n", .{unique_colors_palette});
 
-    // Calculate geometric mean
-    const geometric_mean = calculateGeometricMean(entropy, unique_colors_palette);
-    print("Geometric mean of entropy and palletized unique colors: {d:.6}\n", .{geometric_mean});
+            // Calculate geometric mean
+            const geometric_mean = calculateGeometricMean(entropy, unique_colors_palette);
+            print("Geometric mean:\t{d:.6}\n", .{geometric_mean});
 
-    // Determine if the image is photographic and calculate confidence
-    const photo_determination = calculatePhotoConfidence(geometric_mean);
-    print("The image {s} is {s} photographic with {d:.2}% confidence.\n", .{
-        args[1],
-        if (photo_determination.is_photo) "likely" else "unlikely to be",
-        photo_determination.confidence,
-    });
+            // Determine if the image is photographic and calculate confidence
+            const photo_determination = calculatePhotoConfidence(geometric_mean);
+            print("Classification:\t{s}\n", .{
+                if (photo_determination.is_photo) "Photo" else "Nonphoto",
+            });
+
+            print("Confidence:\t{d:.2}%\n", .{photo_determination.confidence});
+        },
+        2 => {
+            // Calculate entropy & count unique colors
+            const entropy = image.calculateEntropy();
+
+            // Palletize the picture object currently in use
+            image.palletizeImage(color_depth);
+
+            // Count unique colors in the picture object after palletization
+            const unique_colors_palette = try image.countUniqueColors();
+
+            // Calculate geometric mean
+            const geometric_mean = calculateGeometricMean(entropy, unique_colors_palette);
+
+            const photo_determination = calculatePhotoConfidence(geometric_mean);
+            if (photo_determination.is_photo) {
+                print("True\n", .{});
+            } else {
+                print("False\n", .{});
+            }
+        },
+        else => {
+            // Calculate entropy & count unique colors
+            const entropy = image.calculateEntropy();
+            // const unique_colors = try image.countUniqueColors();
+
+            // Palletize the picture object currently in use
+            image.palletizeImage(color_depth);
+
+            // Count unique colors in the picture object after palletization
+            const unique_colors_palette = try image.countUniqueColors();
+
+            // Calculate geometric mean
+            const geometric_mean = calculateGeometricMean(entropy, unique_colors_palette);
+            print("Geometric mean of entropy and palletized unique colors: {d:.6}\n", .{geometric_mean});
+
+            // Determine if the image is photographic and calculate confidence
+            const photo_determination = calculatePhotoConfidence(geometric_mean);
+            print("The image {s} is {s} photographic with {d:.2}% confidence.\n", .{
+                args[1],
+                if (photo_determination.is_photo) "likely" else "unlikely to be",
+                photo_determination.confidence,
+            });
+        },
+    }
 }
