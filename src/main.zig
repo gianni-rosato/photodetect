@@ -4,6 +4,11 @@ const c = @cImport({
     @cInclude("stb_image.h");
 });
 
+const RED = "\x1b[31m";
+const GREEN = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const RESET = "\x1b[0m";
+
 const Picture = struct {
     data: [*]u8,
     width: usize,
@@ -104,8 +109,8 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     if (args.len != 3) {
-        print("Usage: {s} <image_file> <print_mode>\n", .{args[0]});
-        print("print mode: 0 - pretty, 1 - verbose, 2 - boolean\n", .{});
+        print("Usage: {s} <\x1b[33mimage_file\x1b[0m> <\x1b[33mprint_mode\x1b[0m>\n", .{args[0]});
+        print("print mode:\n\t0: pretty\n\t1: verbose\n\t2: boolean\n", .{});
         return error.InvalidArgCount;
     }
 
@@ -119,12 +124,12 @@ pub fn main() !void {
     defer c.stbi_image_free(img);
 
     if (img == null) {
-        std.debug.print("Error in loading the image\n", .{});
+        std.debug.print("\x1b[31mError in loading the image\x1b[0m\n", .{});
         return error.ImageLoadFailed;
     }
 
     if (channels < 3) {
-        std.debug.print("Image must have at least 3 channels (RGB)\n", .{});
+        std.debug.print("\x1b[31mImage must have at least 3 channels (RGB)\x1b[0m\n", .{});
         return error.InvalidChannelCount;
     }
 
@@ -133,10 +138,12 @@ pub fn main() !void {
     // Initialize picture object
     var image = Picture.pictureInit(img, @intCast(width), @intCast(height), @intCast(channels));
 
+    // Calculate entropy
+    const entropy = image.calculateEntropy();
+
     switch (printmode) {
         1 => {
-            // Calculate entropy & count unique colors
-            const entropy = image.calculateEntropy();
+            // Count unique colors
             const unique_colors = try image.countUniqueColors();
 
             // Palletize the picture object currently in use
@@ -145,27 +152,24 @@ pub fn main() !void {
             // Count unique colors in the picture object after palletization
             const unique_colors_palette = try image.countUniqueColors();
 
-            print("Input image:\t{s}\n", .{args[1]});
-            print("Image entropy:\t{d:.6}\n", .{entropy});
-            print("Unique colors:\t{d}\n", .{unique_colors});
-            print("Pallete colors:\t{d}\n", .{unique_colors_palette});
+            print("Input image:\t\x1b[33m{s}\x1b[0m\n", .{args[1]});
+            print("Image entropy:\t\x1b[33m{d:.6}\x1b[0m\n", .{entropy});
+            print("Unique colors:\t\x1b[33m{d}\x1b[0m\n", .{unique_colors});
+            print("Pallete colors:\t\x1b[33m{d}\x1b[0m\n", .{unique_colors_palette});
 
             // Calculate geometric mean
             const geometric_mean = calculateGeometricMean(entropy, unique_colors_palette);
-            print("Geometric mean:\t{d:.6}\n", .{geometric_mean});
+            print("Geometric mean:\t\x1b[32m{d:.6}\x1b[0m\n", .{geometric_mean});
 
             // Determine if the image is photographic and calculate confidence
             const photo_determination = calculatePhotoConfidence(geometric_mean);
             print("Classification:\t{s}\n", .{
-                if (photo_determination.is_photo) "Photo" else "Nonphoto",
+                if (photo_determination.is_photo) "\x1b[32mPhoto\x1b[0m" else "\x1b[33mNonphoto\x1b[0m",
             });
 
-            print("Confidence:\t{d:.2}%\n", .{photo_determination.confidence});
+            print("Confidence:\t\x1b[33m{d:.2}%\x1b[0m\n", .{photo_determination.confidence});
         },
         2 => {
-            // Calculate entropy & count unique colors
-            const entropy = image.calculateEntropy();
-
             // Palletize the picture object currently in use
             image.palletizeImage(color_depth);
 
@@ -183,10 +187,6 @@ pub fn main() !void {
             }
         },
         else => {
-            // Calculate entropy & count unique colors
-            const entropy = image.calculateEntropy();
-            // const unique_colors = try image.countUniqueColors();
-
             // Palletize the picture object currently in use
             image.palletizeImage(color_depth);
 
@@ -199,9 +199,9 @@ pub fn main() !void {
 
             // Determine if the image is photographic and calculate confidence
             const photo_determination = calculatePhotoConfidence(geometric_mean);
-            print("The image {s} is {s} photographic with {d:.2}% confidence.\n", .{
+            print("The image {s} is {s} photographic with \x1b[33m{d:.2}%\x1b[0m confidence.\n", .{
                 args[1],
-                if (photo_determination.is_photo) "likely" else "unlikely to be",
+                if (photo_determination.is_photo) "\x1b[32mlikely\x1b[0m" else "\x1b[33munlikely\x1b[0m to be",
                 photo_determination.confidence,
             });
         },

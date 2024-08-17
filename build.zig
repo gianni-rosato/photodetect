@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
 
     // Create the executable
     const bin = b.addExecutable(.{
-        .name = "entrop",
+        .name = "photodetect",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
