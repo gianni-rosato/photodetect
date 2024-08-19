@@ -1,6 +1,6 @@
 # photodetect
 
-`photodetect` is a command-line tool written in Zig that analyzes images to determine whether they are likely to be photographs or not. It uses the geometric mean of the image's Shannon entropy coefficient & the number of colors after palletization to 16 colors per channel to make this determination.
+`photodetect` is a command-line tool written in Zig that analyzes images to determine whether their contents can be considered "photographic" or "non-photographic." It uses the geometric mean of the image's Shannon entropy coefficient & the number of colors after palletization to 16 colors per channel to make this determination.
 
 ## Features
 
